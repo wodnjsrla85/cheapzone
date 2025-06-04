@@ -9,20 +9,29 @@ import 'package:http/http.dart' as http;
 class VmMapHandler extends GetxController {
   final Completer<GoogleMapController> mapController = Completer();
   final RxSet<Marker> markers = <Marker>{}.obs;
-  final latData = 0.0.obs;
-  final longData = 0.0.obs;
+  
+  final latData = 0.0.obs; //현재위치
+  final longData = 0.0.obs; //현재위치
+
+  final searchLat = 0.0.obs;
+  final searchLong = 0.0.obs;
+  
   final canRun = false.obs;
   final String apiKey = '$api'; // 실제 API 키로 교체
   final RxBool isLoading = false.obs;
+
+  final distanceText = ''.obs;
+  final durationText = ''.obs;
 
 
   final searchedPlace = ''.obs; // 검색 지명 저장
   final isSearching = false.obs; // 검색 상태 표시
 
   @override
-  void onInit() {
+  void onInit() async{
     super.onInit();
-    checkLocationPermission();
+    await checkLocationPermission();
+    await fetchAllTypes();
   }
   //위치 허용을 하겠느냐 물어 보는 함수 
   Future<void> checkLocationPermission() async {
@@ -40,6 +49,7 @@ class VmMapHandler extends GetxController {
       getCurrentLocation();
     }
   }
+
 //gps 위치 받아옴 
   Future<void> getCurrentLocation() async {
     Position position = await Geolocator.getCurrentPosition();
@@ -56,7 +66,7 @@ class VmMapHandler extends GetxController {
   
   }
   //위치를 다시 불어오면 서 마카를 찍어줌 
-    Future<void> fetchPlacesAndMarkers({
+  Future<void> fetchPlacesAndMarkers({
   required String type,
   int radius = 2000,
 }) async {
@@ -92,8 +102,17 @@ class VmMapHandler extends GetxController {
       infoWindow: InfoWindow(
         title: name,
         snippet: vicinity,
+        onTap: () {
+          Get.snackbar('$distanceText', '$durationText', snackPosition: SnackPosition.BOTTOM);
+        },
       ),
       icon: getMarkerColor(type),
+      onTap: () async{
+        await fetchDistanceMatrix(
+          origin: isSearching.value == false ? LatLng(latData.value,longData.value) : LatLng(searchLat.value, searchLong.value),
+          destination: LatLng(lat, lng)
+        );
+      },
     );
 
     newmarkers.add(marker);
@@ -130,8 +149,8 @@ class VmMapHandler extends GetxController {
           double lat = location['lat'];
           double lng = location['lng'];
 
-          latData.value = lat;
-          longData.value = lng;
+          searchLat.value = lat;
+          searchLong.value = lng;
 
           final controller = await mapController.future;
           controller.animateCamera(CameraUpdate.newLatLngZoom(
@@ -228,6 +247,33 @@ class VmMapHandler extends GetxController {
       return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
     default:
       return BitmapDescriptor.defaultMarker;
+  }
+}
+
+Future<void> fetchDistanceMatrix({
+  required LatLng origin,
+  required LatLng destination,
+}) async {
+  final url = Uri.parse(
+    'https://maps.googleapis.com/maps/api/distancematrix/json'
+    '?origins=${origin.latitude},${origin.longitude}'
+    '&destinations=${destination.latitude},${destination.longitude}'
+    '&mode=transit'
+    '&language=ko'
+    '&key=$apiKey',
+  );
+
+  final response = await http.get(url);
+  if (response.statusCode == 200) {
+    final data = json.decode(utf8.decode(response.bodyBytes));
+    print(data);
+
+    final distanceText = data['rows'][0]['elements'][0]['distance']['text'];
+    final durationText = data['rows'][0]['elements'][0]['duration']['text'];// 예: "7분"
+
+    print("거리: $distanceText, 소요시간: $durationText");
+  } else {
+    print('Distance Matrix API 오류: ${response.body}');
   }
 }
 }

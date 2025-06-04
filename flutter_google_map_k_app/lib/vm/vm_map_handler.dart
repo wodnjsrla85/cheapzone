@@ -196,6 +196,9 @@ class VmMapHandler extends GetxController {
           final vicinity = place['vicinity'];
 
           return Marker(
+            onTap: () {
+              calculateDistance(lat, lng);
+            },
             markerId: MarkerId('$type-$name'), // 타입별로 고유 ID
             position: LatLng(lat, lng),
             icon: getMarkerColor(type),
@@ -213,6 +216,39 @@ class VmMapHandler extends GetxController {
 
   markers.value = allMarkers;
   isLoading.value = false;
+}
+
+// 거리 계산해주는 함수
+Future<void> calculateDistance(double lat, double lng) async {
+  final url = 'https://maps.googleapis.com/maps/api/directions/json'
+      '?origin=$latData,$longData'
+      '&destination=$lat,$lng'
+      '&mode=transit'
+      '&key=$api';
+
+  try {
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['routes'] != null &&
+          data['routes'].isNotEmpty &&
+          data['routes'][0]['legs'] != null &&
+          data['routes'][0]['legs'].isNotEmpty) {
+        final distanceText = data['routes'][0]['legs'][0]['distance']['text'];
+        final durationText = data['routes'][0]['legs'][0]['duration']['text'];
+
+        print('실제 도보 거리: $distanceText, 시간: $durationText');
+      } else {
+        print('경로 정보를 찾을 수 없습니다.');
+      }
+    } else {
+      print('요청 실패: 상태 코드 ${response.statusCode}');
+    }
+  } catch (e) {
+    print('예외 발생: $e');
+  }
 }
 
 

@@ -1,7 +1,7 @@
 /**
  * 2025년 06월 4일
- * 천재 기획자 : 정도영
- * 개발일지 : 그냥 지켜보고 있다. 아직 제대로 하지 못하고 있다. 흑흑..
+ * 개발일지 : 그냥 지켜보고 있다ㅠㅠ. 검색 및 현재 위치에서 반경 1km 표기 (Google 지도에서 circles 속성 사용)
+ * 하이퍼 기획자 : 정도영
  * 
  * 2025 6월 02일,06월 03 
  * 개발일지 : 본인 api키로 구글 맵을 띄우고 공공 api키를 받아 주유소 위치를 마카로 찍었다. 
@@ -29,7 +29,7 @@ class MapSample extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = Get.find<VmMapHandler>(); 
+    final vm = Get.find<VmMapHandler>();
 
     return Scaffold(
       appBar: AppBar(
@@ -41,15 +41,16 @@ class MapSample extends StatelessWidget {
                   ? vm.fetchPlacesAndMarkers(type: type)
                   : vm.fetchAllTypes();
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'all', child: Text('모두 보기')),
-              const PopupMenuItem(value: 'parking', child: Text('주차장')),
-              const PopupMenuItem(value: 'gas_station', child: Text('주유소')),
-              const PopupMenuItem(
-                value: 'electric_vehicle_charging_station',
-                child: Text('전기차 충전소'),
-              ),
-            ],
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(value: 'all', child: Text('모두 보기')),
+                  const PopupMenuItem(value: 'parking', child: Text('주차장')),
+                  const PopupMenuItem(value: 'gas_station', child: Text('주유소')),
+                  const PopupMenuItem(
+                    value: 'electric_vehicle_charging_station',
+                    child: Text('전기차 충전소'),
+                  ),
+                ],
           ),
         ],
         bottom: PreferredSize(
@@ -75,14 +76,19 @@ class MapSample extends StatelessWidget {
                     final query = searchController.text.trim();
                     if (query.isEmpty) return;
 
-                    final response = await _places.searchByText(query, language: 'ko', region: 'kr');
-                    if (response.status == 'OK' && response.results.isNotEmpty) {
+                    final response = await _places.searchByText(
+                      query,
+                      language: 'ko',
+                      region: 'kr',
+                    );
+                    if (response.status == 'OK' &&
+                        response.results.isNotEmpty) {
                       final result = response.results.first;
                       final lat = result.geometry!.location.lat;
                       final lng = result.geometry!.location.lng;
                       final controller = await vm.mapController.future;
                       controller.animateCamera(
-                        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 17),
+                        CameraUpdate.newLatLngZoom(LatLng(lat, lng), 15),
                       );
 
                       vm.latData.value = lat;
@@ -98,14 +104,27 @@ class MapSample extends StatelessWidget {
         ),
       ),
       body: Obx(() {
+        // 현재 위치 반경 표시
+        Set<Circle> circles = {
+          Circle(
+            circleId: CircleId("반경 1km"),
+            center: LatLng(vm.latData.value, vm.longData.value), // 중심점
+            radius: 500, // 반지름 (단위: meter)
+            strokeColor: Colors.blueAccent,
+            strokeWidth: 2,
+            fillColor: Colors.blueAccent.withAlpha(51),
+          ),
+        };
+
         if (!vm.canRun.value) {
           return const Center(child: CircularProgressIndicator());
         }
 
         return GoogleMap(
+          circles: circles,
           initialCameraPosition: CameraPosition(
             target: LatLng(vm.latData.value, vm.longData.value),
-            zoom: 14,
+            zoom: 17,
           ),
           markers: vm.markers.toSet(),
           myLocationEnabled: true,

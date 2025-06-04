@@ -28,7 +28,7 @@ class MapSample extends StatelessWidget {
               const PopupMenuItem(value: 'gas_station', child: Text('주유소')),
               const PopupMenuItem(value: 'electric_vehicle_charging_station', child: Text('전기차 충전소')),
             ],
-          )
+          ),
         ],
       ),
       body: Obx(() => Stack(

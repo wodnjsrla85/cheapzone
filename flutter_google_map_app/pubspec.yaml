@@ -44,6 +44,12 @@ dependencies:
   # GetX
   get: ^4.7.2
 
+  # google_geocoding
+  google_geocoding_api: ^1.5.2
+
+  # Http
+  http: ^1.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

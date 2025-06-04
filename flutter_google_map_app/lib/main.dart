@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_google_map_app/view/map_sample.dart';
+import 'package:flutter_google_map_app/vm/places_controller.dart';
 import 'package:flutter_google_map_app/vm/vm_map_handler.dart';
 import 'package:get/get.dart';
 
 void main() {
-  Get.put(VmMapHandler());
+  Get.put(VmMapHandler(),);
+  Get.put(PlacesController());
   runApp(const MyApp());
 }
 

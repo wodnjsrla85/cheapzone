@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_google_map_app/vm/vm_map_handler.dart';
+import 'package:flutter_google_map_app/vm/places_controller.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -9,29 +9,38 @@ class MapSample extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = Get.find<VmMapHandler>();
+    final PlacesController controller = Get.put(PlacesController());
+    LatLng center = LatLng(37.4979, 127.0276); // 강남역 인근
 
     return Scaffold(
-      appBar: AppBar(title: Text("내 위치 지도")),
-      body: Obx(() {
-        if (!vm.canRun.value) {
-          return Center(child: CircularProgressIndicator());
-        }
-
-        return GoogleMap(
-          initialCameraPosition: CameraPosition(
-            target: LatLng(vm.latData.value, vm.longData.value),
-            zoom: 17,
-          ),
-          onMapCreated: (GoogleMapController controller) {
-            vm.mapController.complete(controller);
-          },
-          markers: vm.currentMarkers,
-          myLocationEnabled: true,
-          myLocationButtonEnabled: true,
-          mapType: MapType.normal,
-        );
-      }),
+      appBar: AppBar(
+        title: const Text('주변 시설 검색'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: (type) {
+              controller.fetchPlaces(
+                location: center,
+                placeType: type,
+              );
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'parking', child: Text('주차장')),
+              const PopupMenuItem(value: 'gas_station', child: Text('주유소')),
+              const PopupMenuItem(value: 'electric_vehicle_charging_station', child: Text('전기차 충전소')),
+            ],
+          )
+        ],
+      ),
+      body: Obx(() => Stack(
+            children: [
+              GoogleMap(
+                initialCameraPosition: CameraPosition(target: center, zoom: 17),
+                markers: controller.markers.toSet(),
+              ),
+              if (controller.isLoading.value)
+                const Center(child: CircularProgressIndicator()),
+            ],
+          )),
     );
   }
 }

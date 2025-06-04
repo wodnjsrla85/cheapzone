@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 
 class VmMapHandler extends GetxController {
   final Completer<GoogleMapController> mapController = Completer();
@@ -10,7 +12,7 @@ class VmMapHandler extends GetxController {
   final canRun = false.obs;
 
   @override
-  void onInit() {
+  void onInit(){
     super.onInit();
     checkLocationPermission();
   }
@@ -52,4 +54,41 @@ class VmMapHandler extends GetxController {
       infoWindow: InfoWindow(title: "내 위치"),
     ),
   };
+
+Future<List<Map<String, dynamic>>> fetchNearbyPlaces({
+  required LatLng location,
+  required String placeType,
+  required String apiKey,
+  int radius = 2000,
+}) async {
+  final url =
+      'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+      '?location=${location.latitude},${location.longitude}'
+      '&radius=$radius'
+      '&type=$placeType'
+      '&key=$apiKey';
+
+  final response = await http.get(Uri.parse(url));
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    final results = data['results'] as List;
+
+    return results.map((place) {
+      final lat = place['geometry']['location']['lat'];
+      final lng = place['geometry']['location']['lng'];
+      final name = place['name'];
+      final vicinity = place['vicinity'];
+
+      return {
+        'name': name,
+        'vicinity': vicinity,
+        'location': LatLng(lat, lng),
+      };
+    }).toList();
+  } else {
+    throw Exception('Places API 호출 실패: ${response.body}');
+  }
+}
+
 }

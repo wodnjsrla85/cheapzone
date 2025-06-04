@@ -21,15 +21,12 @@ class MapSample extends StatelessWidget {
   MapSample({super.key});
 
   final searchController = TextEditingController();
-  //본인 구글 키 여기에 넣어야해요!
-  final GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey:'$api');
-  
-
+  final GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: api); // api는 문자열 키
 
   @override
   Widget build(BuildContext context) {
-    final vm = Get.find<VmMapHandler>();
-    final VmMapHandler vmhandler = Get.put(VmMapHandler());
+    final vm = Get.find<VmMapHandler>(); 
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("내 위치 지도"),
@@ -37,23 +34,22 @@ class MapSample extends StatelessWidget {
           PopupMenuButton<String>(
             onSelected: (type) {
               type != 'all'
-                  ? vmhandler.fetchPlacesAndMarkers(type: type)
-                  : vmhandler.fetchAllTypes();
+                  ? vm.fetchPlacesAndMarkers(type: type)
+                  : vm.fetchAllTypes();
             },
-            itemBuilder:
-                (context) => [
-                  const PopupMenuItem(value: 'all', child: Text('모두 보기')),
-                  const PopupMenuItem(value: 'parking', child: Text('주차장')),
-                  const PopupMenuItem(value: 'gas_station', child: Text('주유소')),
-                  const PopupMenuItem(
-                    value: 'electric_vehicle_charging_station',
-                    child: Text('전기차 충전소'),
-                  ),
-                ],
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'all', child: Text('모두 보기')),
+              const PopupMenuItem(value: 'parking', child: Text('주차장')),
+              const PopupMenuItem(value: 'gas_station', child: Text('주유소')),
+              const PopupMenuItem(
+                value: 'electric_vehicle_charging_station',
+                child: Text('전기차 충전소'),
+              ),
+            ],
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(60),
+          preferredSize: const Size.fromHeight(60),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
@@ -61,7 +57,7 @@ class MapSample extends StatelessWidget {
                 Expanded(
                   child: TextField(
                     controller: searchController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       hintText: '장소, 가게, 건물 검색',
                       fillColor: Colors.white,
                       filled: true,
@@ -70,9 +66,9 @@ class MapSample extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.search),
+                  icon: const Icon(Icons.search),
                   onPressed: () async {
-                    final query = searchController.text;
+                    final query = searchController.text.trim();
                     if (query.isEmpty) return;
 
                     final response = await _places.searchByText(query, language: 'ko', region: 'kr');
@@ -80,11 +76,13 @@ class MapSample extends StatelessWidget {
                       final result = response.results.first;
                       final lat = result.geometry!.location.lat;
                       final lng = result.geometry!.location.lng;
-
                       final controller = await vm.mapController.future;
                       controller.animateCamera(
                         CameraUpdate.newLatLngZoom(LatLng(lat, lng), 17),
                       );
+
+                      vm.latData.value = lat;
+                      vm.longData.value = lng;
                     } else {
                       Get.snackbar('검색 실패', '검색 결과가 없습니다.');
                     }
@@ -101,12 +99,21 @@ class MapSample extends StatelessWidget {
         }
 
         return GoogleMap(
-          
-             initialCameraPosition: CameraPosition( target: LatLng(vmhandler.latData.value, vmhandler.longData.value),zoom: 14,),
-              markers: vmhandler.markers.toSet(),
-            );
+          initialCameraPosition: CameraPosition(
+            target: LatLng(vm.latData.value, vm.longData.value),
+            zoom: 14,
+          ),
+          markers: vm.markers.toSet(),
+          myLocationEnabled: true,
+          myLocationButtonEnabled: true,
+          mapType: MapType.normal,
+          onMapCreated: (GoogleMapController controller) {
+            if (!vm.mapController.isCompleted) {
+              vm.mapController.complete(controller);
+            }
+          },
+        );
       }),
     );
   }
 }
-

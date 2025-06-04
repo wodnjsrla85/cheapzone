@@ -105,7 +105,7 @@ class VmMapHandler extends GetxController {
   // ✅ 검색 지명으로 위치 이동
   Future<void> searchAndMoveToPlace(String place) async {
     isSearching.value = true;
-    final apiKey = 'YOUR_GOOGLE_API_KEY'; // 🔑 실제 발급받은 키로 교체
+    final apiKey = '$api'; 
 
     final url = Uri.parse(
       'https://maps.googleapis.com/maps/api/geocode/json?address=$place&key=$apiKey',

@@ -40,7 +40,7 @@ class VmMapHandler extends GetxController {
       getCurrentLocation();
     }
   }
-  //gps 위치 받아옴 
+//gps 위치 받아옴 
   Future<void> getCurrentLocation() async {
     Position position = await Geolocator.getCurrentPosition();
 
@@ -55,9 +55,8 @@ class VmMapHandler extends GetxController {
     ));
   
   }
-
-  //위치를 다시 불어오면 해당 카테고리의 위치를 찍어준다. 
-  Future<void> fetchPlacesAndMarkers({
+  //위치를 다시 불어오면 서 마카를 찍어줌 
+    Future<void> fetchPlacesAndMarkers({
   required String type,
   int radius = 2000,
 }) async {
@@ -99,13 +98,24 @@ class VmMapHandler extends GetxController {
 
     newmarkers.add(marker);
   }
+
+  // 현재 위치 마커도 추가
+  newmarkers.add(
+    Marker(
+      markerId: MarkerId("currentLocation"),
+      position: LatLng(latData.value, longData.value),
+      infoWindow: InfoWindow(title: "내 위치"),
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+    ),
+  );
+
   markers.value = newmarkers;
 }
 
-  // ✅ 검색 지명으로 위치 이동
+  // 검색 지명으로 위치 이동
   Future<void> searchAndMoveToPlace(String place) async {
     isSearching.value = true;
-    final apiKey = '$api'; 
+    final apiKey = 'YOUR_GOOGLE_API_KEY'; // 🔑 실제 발급받은 키로 교체
 
     final url = Uri.parse(
       'https://maps.googleapis.com/maps/api/geocode/json?address=$place&key=$apiKey',
@@ -128,6 +138,9 @@ class VmMapHandler extends GetxController {
             LatLng(lat, lng),
             17.0,
           ));
+        
+        // 검색한 위치 기준으로 주유소/주차장/충전소 다시 요청
+        await fetchAllTypes();
         } else {
           Get.snackbar("검색 실패", "위치를 찾을 수 없습니다");
         }
@@ -140,7 +153,7 @@ class VmMapHandler extends GetxController {
       isSearching.value = false;
     }
   }
-
+  //다시 본인 위치로 돌아오는거 
   Set<Marker> get currentMarkers => {
         Marker(
           markerId: MarkerId("currentLocation"),
@@ -150,7 +163,7 @@ class VmMapHandler extends GetxController {
       };
 
   
-Future<void> fetchAllTypes({
+  Future<void> fetchAllTypes({
   int radius = 2000,
 }) async {
   isLoading.value = true;
@@ -204,7 +217,7 @@ Future<void> fetchAllTypes({
 
 
   
-  //각 해당하는 마카 색상을 바꿔줌 
+  //각 해당하는 마카를 찍어줌 
   BitmapDescriptor getMarkerColor(String type) {
   switch (type) {
     case 'parking':

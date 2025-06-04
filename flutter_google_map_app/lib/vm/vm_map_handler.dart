@@ -12,9 +12,9 @@ class VmMapHandler extends GetxController {
   final canRun = false.obs;
 
   @override
-  void onInit(){
+  void onInit() async{
     super.onInit();
-    checkLocationPermission();
+    await checkLocationPermission();
   }
 
   Future<void> checkLocationPermission() async {

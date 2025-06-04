@@ -33,11 +33,11 @@ class MapSample extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("내 위치 지도"),
-         actions: [
+        actions: [
           PopupMenuButton<String>(
             onSelected: (type) {
               type != 'all'
-                  ? vmhandler.fetchPlaces( placeType: type)
+                  ? vmhandler.fetchPlacesAndMarkers(type: type)
                   : vmhandler.fetchAllTypes();
             },
             itemBuilder:

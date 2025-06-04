@@ -40,7 +40,7 @@ class VmMapHandler extends GetxController {
       getCurrentLocation();
     }
   }
-//gps 위치 받아옴 
+  //gps 위치 받아옴 
   Future<void> getCurrentLocation() async {
     Position position = await Geolocator.getCurrentPosition();
 
@@ -55,56 +55,52 @@ class VmMapHandler extends GetxController {
     ));
   
   }
-  //위치를 다시 불어오면 서 마카를 찍어줌 
-  Future<void> fetchPlaces({
-    //주유소 올 등 타입
-    required String placeType,
-    //반경을 넣어주는 듯함
-    int radius = 2000,
-  }) async {
-    isLoading.value = true;
 
-    final url =
-        'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-        '?location=${latData},${longData}'
-        '&radius=$radius'
-        '&type=$placeType'
-        //위에 넣은 내 api키 
-        '&key=$apiKey';
+  //위치를 다시 불어오면 해당 카테고리의 위치를 찍어준다. 
+  Future<void> fetchPlacesAndMarkers({
+  required String type,
+  int radius = 2000,
+}) async {
+  final url = Uri.parse(
+    'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+    '?location=${latData.value},${longData.value}'
+    '&radius=$radius'
+    '&type=$type'
+    '&key=$apiKey',
+  );
 
-    try {
-      final response = await http.get(Uri.parse(url));
+  final response = await http.get(url);
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final results = data['results'] as List;
-
-        Set<Marker> newMarkers = results.map((place) {
-          final lat = place['geometry']['location']['lat'];
-          final lng = place['geometry']['location']['lng'];
-          final name = place['name'];
-          final vicinity = place['vicinity'];
-
-          return Marker(
-            markerId: MarkerId(name),
-            position: LatLng(lat, lng),
-            icon: getMarkerColor(place),
-            infoWindow: InfoWindow(
-              title: name,
-              snippet: vicinity,
-            ),
-          );
-        }).toSet();
-        markers.value = newMarkers;
-      } else {
-        Get.snackbar('에러', 'Places API 오류: ${response.body}');
-      }
-    } catch (e) {
-      Get.snackbar('에러', '예외 발생: $e');
-    } finally {
-      isLoading.value = false;
-    }
+  if (response.statusCode != 200) {
+    throw Exception('Failed to load places');
   }
+
+  final data = json.decode(response.body);
+  final results = data['results'] as List;
+
+  Set<Marker> newmarkers = {};
+
+  for (var place in results) {
+    final lat = place['geometry']['location']['lat'];
+    final lng = place['geometry']['location']['lng'];
+    final name = place['name'];
+    final vicinity = place['vicinity'];
+    final placeId = place['place_id'];
+
+    final marker = Marker(
+      markerId: MarkerId(placeId),
+      position: LatLng(lat, lng),
+      infoWindow: InfoWindow(
+        title: name,
+        snippet: vicinity,
+      ),
+      icon: getMarkerColor(type),
+    );
+
+    newmarkers.add(marker);
+  }
+  markers.value = newmarkers;
+}
 
   // ✅ 검색 지명으로 위치 이동
   Future<void> searchAndMoveToPlace(String place) async {
@@ -154,7 +150,7 @@ class VmMapHandler extends GetxController {
       };
 
   
-  Future<void> fetchAllTypes({
+Future<void> fetchAllTypes({
   int radius = 2000,
 }) async {
   isLoading.value = true;
@@ -208,7 +204,7 @@ class VmMapHandler extends GetxController {
 
 
   
-  //각 해당하는 마카를 찍어줌 
+  //각 해당하는 마카 색상을 바꿔줌 
   BitmapDescriptor getMarkerColor(String type) {
   switch (type) {
     case 'parking':

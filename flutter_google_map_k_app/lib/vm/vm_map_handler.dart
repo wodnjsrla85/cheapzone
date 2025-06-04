@@ -1,32 +1,75 @@
-// controllers/places_controller.dart
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_google_map_app/api.dart';
 import 'package:get/get.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 
-class PlacesController extends GetxController {
+class VmMapHandler extends GetxController {
+  final Completer<GoogleMapController> mapController = Completer();
   final RxSet<Marker> markers = <Marker>{}.obs;
-  final String apiKey = ''; // 실제 API 키로 교체
+  final latData = 0.0.obs;
+  final longData = 0.0.obs;
+  final canRun = false.obs;
+  final String apiKey = '$api'; // 실제 API 키로 교체
   final RxBool isLoading = false.obs;
 
-  @override
-  void onInit()async{
-    super.onInit();
-    await fetchAllTypes(location: LatLng(37.4979, 127.0276));
-  }
 
+  final searchedPlace = ''.obs; // 검색 지명 저장
+  final isSearching = false.obs; // 검색 상태 표시
+
+  @override
+  void onInit() {
+    super.onInit();
+    checkLocationPermission();
+  }
+  //위치 허용을 하겠느냐 물어 보는 함수 
+  Future<void> checkLocationPermission() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return;
+    }
+
+    if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
+      getCurrentLocation();
+    }
+  }
+//gps 위치 받아옴 
+  Future<void> getCurrentLocation() async {
+    Position position = await Geolocator.getCurrentPosition();
+
+    latData.value = position.latitude;
+    longData.value = position.longitude;
+    canRun.value = true;
+
+    final controller = await mapController.future;
+    controller.animateCamera(CameraUpdate.newLatLngZoom(
+      LatLng(latData.value, longData.value),
+      17.0,
+    ));
+  
+  }
+  //위치를 다시 불어오면 서 마카를 찍어줌 
   Future<void> fetchPlaces({
-    required LatLng location,
+    //주유소 올 등 타입
     required String placeType,
+    //반경을 넣어주는 듯함
     int radius = 2000,
   }) async {
     isLoading.value = true;
 
     final url =
         'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-        '?location=${location.latitude},${location.longitude}'
+        '?location=${latData},${longData}'
         '&radius=$radius'
         '&type=$placeType'
+        //위에 넣은 내 api키 
         '&key=$apiKey';
 
     try {
@@ -62,9 +105,56 @@ class PlacesController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  // ✅ 검색 지명으로 위치 이동
+  Future<void> searchAndMoveToPlace(String place) async {
+    isSearching.value = true;
+    final apiKey = 'YOUR_GOOGLE_API_KEY'; // 🔑 실제 발급받은 키로 교체
+
+    final url = Uri.parse(
+      'https://maps.googleapis.com/maps/api/geocode/json?address=$place&key=$apiKey',
+    );
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        if (jsonData['status'] == 'OK') {
+          final location = jsonData['results'][0]['geometry']['location'];
+          double lat = location['lat'];
+          double lng = location['lng'];
+
+          latData.value = lat;
+          longData.value = lng;
+
+          final controller = await mapController.future;
+          controller.animateCamera(CameraUpdate.newLatLngZoom(
+            LatLng(lat, lng),
+            17.0,
+          ));
+        } else {
+          Get.snackbar("검색 실패", "위치를 찾을 수 없습니다");
+        }
+      } else {
+        Get.snackbar("API 오류", "지오코딩 요청 실패: ${response.statusCode}");
+      }
+    } catch (e) {
+      Get.snackbar("에러", "검색 중 오류 발생: $e");
+    } finally {
+      isSearching.value = false;
+    }
+  }
+
+  Set<Marker> get currentMarkers => {
+        Marker(
+          markerId: MarkerId("currentLocation"),
+          position: LatLng(latData.value, longData.value),
+          infoWindow: InfoWindow(title: "내 위치"),
+        ),
+      };
+
   
   Future<void> fetchAllTypes({
-  required LatLng location,
   int radius = 2000,
 }) async {
   isLoading.value = true;
@@ -79,7 +169,7 @@ class PlacesController extends GetxController {
   for (String type in types) {
     final url =
         'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
-        '?location=${location.latitude},${location.longitude}'
+        '?location=${latData},${longData}'
         '&radius=$radius'
         '&type=$type'
         '&key=$apiKey';
@@ -116,7 +206,10 @@ class PlacesController extends GetxController {
   isLoading.value = false;
 }
 
-BitmapDescriptor getMarkerColor(String type) {
+
+  
+  //각 해당하는 마카를 찍어줌 
+  BitmapDescriptor getMarkerColor(String type) {
   switch (type) {
     case 'parking':
       return BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);

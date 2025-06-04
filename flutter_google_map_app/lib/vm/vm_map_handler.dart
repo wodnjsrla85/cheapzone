@@ -31,6 +31,7 @@ class VmMapHandler extends GetxController {
     if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
       getCurrentLocation();
     }
+
   }
 
   Future<void> getCurrentLocation() async {
@@ -45,6 +46,7 @@ class VmMapHandler extends GetxController {
       LatLng(latData.value, longData.value),
       17.0,
     ));
+    
   }
 
   Set<Marker> get currentMarkers => {

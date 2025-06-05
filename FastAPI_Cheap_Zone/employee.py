@@ -13,7 +13,7 @@ router = APIRouter()
 
 def connect():
     return pymysql.connect(
-        host="192.168.20.10",
+        host="127.0.0.1",
         user="root",
         password="qwer1234",
         db="cheapzone",

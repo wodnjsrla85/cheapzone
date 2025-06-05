@@ -15,12 +15,11 @@ import pymysql
 
 
 app = FastAPI()
-app.include_router(user_router, prefix="/user", tags=['uer'])
+app.include_router(user_router, prefix="/user", tags=['user'])
 app.include_router(employee_router, prefix="/employee", tags=['employee'])
 app.include_router(inquiry_router, prefix="/inquiry", tags=['inquiry'])
 app.include_router(bookmark_router, prefix="/bookmark", tags=['bookmark'])
 app.include_router(response_router, prefix="/response", tags=['response'])
-
 
 if __name__ == "__main__":
     import uvicorn

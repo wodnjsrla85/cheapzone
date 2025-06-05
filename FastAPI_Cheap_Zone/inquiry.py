@@ -4,11 +4,22 @@ description : inquiry table for Tikkle Map Project
 date : 2025.06.05
 version : 1.0
 """
-
-from fastapi import FastAPI, APIRouter, Form
+from fastapi import APIRouter
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime
 import pymysql
 
 router = APIRouter()
+
+class Inquiry(BaseModel):
+    id : int
+    date : str
+    type : int
+    content : str
+    category : str
+    status : bool = False
+    user_email : str
 
 def connect():
     return pymysql.connect(
@@ -18,3 +29,33 @@ def connect():
         db="cheapzone",
         charset="utf8"
     )
+
+@router.get('/select')
+def select():
+    conn = connect()
+    curs = conn.cursor()
+
+    sql = "SELECT * FROM inquiry"
+    curs.execute(sql)
+    rows = curs.fetchall()
+    conn.close()
+    print(rows)
+
+    return {'results': rows}
+
+@router.post('/insert')
+def insert(inquiry : Inquiry) :
+    conn = connect()
+    curs = conn.cursor()
+
+    try : 
+        sql = "insert into inquiry(date, type, content, category, status, user_email) values (now(), %s, %s, %s, %s, %s)"
+        curs.execute(sql,(inquiry.type, inquiry.content, inquiry.category,inquiry.status, inquiry.user_email))
+        conn.commit()
+        conn.close()
+        return {'result' : 'OK'}
+    except Exception as ex:
+        conn.close()
+        print("Eroor:", ex)
+        return{'result' : 'Error'}
+

@@ -1,5 +1,5 @@
 """
-author : Jack Jung
+author : 재원
 description : response table for Tikkle Map Project
 date : 2025.06.05
 version : 1.0

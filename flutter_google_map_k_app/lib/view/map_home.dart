@@ -17,7 +17,7 @@ import 'package:flutter_google_map_app/api.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_maps_webservice2/places.dart';
-import '../vm/map_handler.dart';
+import '../vm/vm_map_handler.dart';
 
 class MapSample extends StatelessWidget {
   MapSample({super.key});
@@ -120,7 +120,7 @@ class MapSample extends StatelessWidget {
                     if (!vm.mapController.isCompleted) {
                       vm.mapController.complete(controller);
                     }
-                  },
+                  }, 
                 ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {

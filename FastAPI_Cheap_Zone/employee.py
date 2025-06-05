@@ -27,7 +27,7 @@ class Employee(BaseModel):
     name : str
 
 
-@router.get("/employee")
+@router.get("/select")
 async def selectAll(id : str):
     conn = connect()
     curs = conn.cursor()
@@ -38,7 +38,7 @@ async def selectAll(id : str):
     result = [{"id" : row[0], "password" : row[1], "phone": row[2], "name": row[3]}for row in rows] 
     return {'results':result}
 
-@router.post("/insert_emp") 
+@router.post("/insert") 
 async def insertEmp(id : str = Form(...), password : str = Form(...), phone : str = Form(...), name : str = Form(...)):
     conn = connect()
     curs = conn.cursor()

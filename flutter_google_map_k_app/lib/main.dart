@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_google_map_app/view/map_home.dart';
+import 'package:flutter_google_map_app/vm/vm_inquiry_handler.dart';
 import 'package:flutter_google_map_app/vm/vm_map_handler.dart';
 import 'package:get/get.dart';
 
 void main() {
   Get.put(VmMapHandler());
+  Get.put(VmInquiryHandler());
   runApp(const MyApp());
 }
 
